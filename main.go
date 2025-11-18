@@ -5,6 +5,8 @@ import (
 	"net"
 	"os"
 
+	"github.com/arthurhzna/Golang_gRPC/internal/handler"
+	"github.com/arthurhzna/Golang_gRPC/pb/service"
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -28,5 +30,10 @@ func main() {
 		reflection.Register(grpcServer)
 	}
 
+	serviceHandler := handler.NewServiceHandler()
+
 	grpcServer.Serve(lis)
+
+	service.RegisterHelloWorldServiceServer(grpcServer, serviceHandler)
+
 }
