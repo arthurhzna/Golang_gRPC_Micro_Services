@@ -27,6 +27,8 @@ func (am *authMiddleware) Middleware(ctx context.Context, req any, info *grpc.Un
 		return handler(ctx, req)
 	} // allow login and register without authentication jwt
 
+	// log.Printf("AuthMiddleware: Method=%s", info.FullMethod)
+
 	jwtToken, err := jwtentity.ParseTokenFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -39,12 +41,17 @@ func (am *authMiddleware) Middleware(ctx context.Context, req any, info *grpc.Un
 
 	claims, err := jwtentity.GetClaimsFromToken(jwtToken)
 	if err != nil {
+		// log.Printf("AuthMiddleware: error=%v", err)
 		return nil, err
 	}
+
+	// log.Printf("AuthMiddleware: claims=%+v", claims)
 
 	ctx = claims.SetToContext(ctx) // store the claims in the context
 
 	res, err := handler(ctx, req)
+
+	// log.Printf("AuthMiddleware: res=%+v", res)
 
 	return res, nil
 }

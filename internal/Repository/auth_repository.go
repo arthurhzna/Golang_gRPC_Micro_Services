@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
 
 	"github.com/arthurhzna/Golang_gRPC/internal/entity"
 )
@@ -11,6 +12,7 @@ import (
 type IAuthRepository interface {
 	GetUserByEmail(ctx context.Context, email string) (*entity.User, error)
 	InsertUser(ctx context.Context, user *entity.User) error
+	UpdateUserPassword(ctx context.Context, userId string, hashNewPassword string, updatedBy string) error
 }
 
 type authRepository struct {
@@ -102,6 +104,23 @@ func (ar *authRepository) InsertUser(ctx context.Context, user *entity.User) err
 		user.IsDeleted, // ini harus sesuai struct entity
 	)
 
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (ar *authRepository) UpdateUserPassword(ctx context.Context, userId string, hashNewPassword string, updatedBy string) error {
+
+	_, err := ar.db.ExecContext(
+		ctx,
+		`UPDATE "user" SET password = $1, updated_at = $2, updated_by = $3 WHERE id = $4`,
+		hashNewPassword,
+		time.Now(),
+		updatedBy,
+		userId,
+	)
 	if err != nil {
 		return err
 	}
