@@ -18,6 +18,7 @@ type IProductRepository interface {
 	DeleteProduct(ctx context.Context, id string, deletedAt time.Time, deletedBy string) error
 	GetProductsByPagination(ctx context.Context, pagination *common.PaginationRequest) ([]*entity.Product, *common.PaginationResponse, error)
 	GetProductsByPaginationAdmin(ctx context.Context, pagination *common.PaginationRequest) ([]*entity.Product, *common.PaginationResponse, error)
+	GetProductsHighlight(ctx context.Context) ([]*entity.Product, error)
 }
 
 type productRepository struct {
@@ -31,7 +32,8 @@ func NewProductRepository(db *sql.DB) IProductRepository {
 }
 
 func (pr *productRepository) CreateNewProduct(ctx context.Context, product *entity.Product) error {
-	_, err := pr.db.ExecContext(ctx,
+	_, err := pr.db.ExecContext(
+		ctx,
 		`INSERT INTO "product" (id, name, description, price, image_file_name, created_at, created_by, updated_at, updated_by, deleted_at, deleted_by, is_deleted) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
 		product.Id,
 		product.Name,
@@ -160,7 +162,8 @@ func (pr *productRepository) GetProductById(ctx context.Context, id string) (*en
 }
 
 func (pr *productRepository) EditProduct(ctx context.Context, product *entity.Product) error {
-	_, err := pr.db.ExecContext(ctx,
+	_, err := pr.db.ExecContext(
+		ctx,
 		`UPDATE "product" SET name = $1, description = $2, price = $3, image_file_name = $4, updated_at = $5, updated_by = $6 WHERE id = $7`,
 		product.Name,
 		product.Description,
@@ -178,7 +181,8 @@ func (pr *productRepository) EditProduct(ctx context.Context, product *entity.Pr
 }
 
 func (pr *productRepository) DeleteProduct(ctx context.Context, id string, deletedAt time.Time, deletedBy string) error {
-	_, err := pr.db.ExecContext(ctx,
+	_, err := pr.db.ExecContext(
+		ctx,
 		`UPDATE "product" SET deleted_at = $1, deleted_by = $2, is_deleted = true WHERE id = $3`,
 		deletedAt,
 		deletedBy,
@@ -192,7 +196,8 @@ func (pr *productRepository) DeleteProduct(ctx context.Context, id string, delet
 
 func (pr *productRepository) GetProductsByPagination(ctx context.Context, pagination *common.PaginationRequest) ([]*entity.Product, *common.PaginationResponse, error) {
 
-	row := pr.db.QueryRowContext(ctx,
+	row := pr.db.QueryRowContext(
+		ctx,
 		"SELECT COUNT(*) FROM product WHERE is_deleted = false",
 	)
 
@@ -207,7 +212,8 @@ func (pr *productRepository) GetProductsByPagination(ctx context.Context, pagina
 
 	offset := (pagination.CurrentPage - 1) * pagination.ItemPerPage
 	totalPages := (totalCount + int(pagination.ItemPerPage) - 1) / int(pagination.ItemPerPage)
-	rows, err := pr.db.QueryContext(ctx,
+	rows, err := pr.db.QueryContext(
+		ctx,
 		"SELECT id, name, description, price, image_file_name FROM product WHERE is_deleted = false ORDER BY created_at DESC LIMIT $1 OFFSET $2",
 		pagination.ItemPerPage,
 		offset,
@@ -243,7 +249,8 @@ func (pr *productRepository) GetProductsByPagination(ctx context.Context, pagina
 
 func (pr *productRepository) GetProductsByPaginationAdmin(ctx context.Context, pagination *common.PaginationRequest) ([]*entity.Product, *common.PaginationResponse, error) {
 
-	row := pr.db.QueryRowContext(ctx,
+	row := pr.db.QueryRowContext(
+		ctx,
 		"SELECT COUNT(*) FROM product WHERE is_deleted = false",
 	)
 
@@ -308,4 +315,33 @@ func (pr *productRepository) GetProductsByPaginationAdmin(ctx context.Context, p
 		TotalPageCount: int32(totalPages),
 	}
 	return products, paginationResponse, nil
+}
+
+func (pr *productRepository) GetProductsHighlight(ctx context.Context) ([]*entity.Product, error) {
+	rows, err := pr.db.QueryContext(
+		ctx,
+		"SELECT id, name, description, price, image_file_name FROM product WHERE is_deleted = false ORDER BY created_at DESC",
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	var products []*entity.Product = make([]*entity.Product, 0)
+	for rows.Next() {
+		var productEntity entity.Product
+
+		rows.Scan(
+			&productEntity.Id,
+			&productEntity.Name,
+			&productEntity.Description,
+			&productEntity.Price,
+			&productEntity.ImageFileName,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+		products = append(products, &productEntity)
+	}
+	return products, nil
 }

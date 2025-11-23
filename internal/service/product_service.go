@@ -22,6 +22,7 @@ type IProductService interface {
 	DeleteProduct(ctx context.Context, req *product.DeleteProductRequest) (*product.DeleteProductResponse, error)
 	ListProduct(ctx context.Context, req *product.ListProductRequest) (*product.ListProductResponse, error)
 	ListProductAdmin(ctx context.Context, req *product.ListProductAdminRequest) (*product.ListProductAdminResponse, error)
+	HighlightProduct(ctx context.Context, req *product.HighlightProductRequest) (*product.HighlightProductResponse, error)
 }
 
 type productService struct {
@@ -331,5 +332,28 @@ func (ps *productService) ListProductAdmin(ctx context.Context, req *product.Lis
 		Base:       utils.SuccessResponse("List product successfully"),
 		Pagination: paginationResponse,
 		Data:       data,
+	}, nil
+}
+
+func (ps *productService) HighlightProduct(ctx context.Context, req *product.HighlightProductRequest) (*product.HighlightProductResponse, error) {
+
+	products, err := ps.productRepository.GetProductsHighlight(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var data []*product.HighlightProductResponseItem = make([]*product.HighlightProductResponseItem, 0)
+	for _, prod := range products {
+		data = append(data, &product.HighlightProductResponseItem{
+			Id:          prod.Id,
+			Name:        prod.Name,
+			Description: prod.Description,
+			Price:       prod.Price,
+			ImageUrl:    fmt.Sprintf("%s/storage/product/%s", os.Getenv("STORAGE_SERVICE_URL"), prod.ImageFileName),
+		})
+	}
+	return &product.HighlightProductResponse{
+		Base: utils.SuccessResponse("get list product highlight successfully"),
+		Data: data,
 	}, nil
 }
