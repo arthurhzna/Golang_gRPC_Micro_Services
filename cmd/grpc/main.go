@@ -12,6 +12,7 @@ import (
 	"github.com/arthurhzna/Golang_gRPC/internal/repository"
 	"github.com/arthurhzna/Golang_gRPC/internal/service"
 	"github.com/arthurhzna/Golang_gRPC/pb/auth"
+	"github.com/arthurhzna/Golang_gRPC/pb/cart"
 	"github.com/arthurhzna/Golang_gRPC/pb/product"
 	"github.com/arthurhzna/Golang_gRPC/pkg/database"
 	"github.com/joho/godotenv"
@@ -45,6 +46,10 @@ func main() {
 	productService := service.NewProductService(productRepository)
 	productHandler := handler.NewProductHandler(productService)
 
+	cartRepository := repository.NewCartRepository(db)
+	cartService := service.NewCartService(productRepository, cartRepository)
+	cartHandler := handler.NewCartHandler(cartService)
+
 	grpcServer := grpc.NewServer(grpc.ChainUnaryInterceptor(
 		grpcmiddlerware.ErrorMiddleware,
 		authMiddleware.Middleware,
@@ -56,6 +61,7 @@ func main() {
 
 	auth.RegisterAuthServiceServer(grpcServer, authHandler)
 	product.RegisterProductServiceServer(grpcServer, productHandler)
+	cart.RegisterCartServiceServer(grpcServer, cartHandler)
 	grpcServer.Serve(lis)
 
 }
