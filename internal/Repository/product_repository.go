@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/arthurhzna/Golang_gRPC/internal/entity"
@@ -14,6 +15,7 @@ import (
 type IProductRepository interface {
 	CreateNewProduct(ctx context.Context, product *entity.Product) error
 	GetProductById(ctx context.Context, id string) (*entity.Product, error)
+	GetProductsByIds(ctx context.Context, ids []string) ([]*entity.Product, error)
 	EditProduct(ctx context.Context, product *entity.Product) error
 	DeleteProduct(ctx context.Context, id string, deletedAt time.Time, deletedBy string) error
 	GetProductsByPagination(ctx context.Context, pagination *common.PaginationRequest) ([]*entity.Product, *common.PaginationResponse, error)
@@ -343,5 +345,39 @@ func (pr *productRepository) GetProductsHighlight(ctx context.Context) ([]*entit
 		}
 		products = append(products, &productEntity)
 	}
+	return products, nil
+}
+
+func (pr *productRepository) GetProductsByIds(ctx context.Context, ids []string) ([]*entity.Product, error) {
+
+	queryIds := make([]string, len(ids))
+	for i, id := range ids {
+		queryIds[i] = fmt.Sprintf("'%s'", id) // not secure, because manual string formatting
+	}
+
+	rows, err := pr.db.QueryContext(
+		ctx,
+		fmt.Sprintf("SELECT id, name, price, image_file_name FROM product WHERE id IN (%s) AND is_deleted = false", strings.Join(queryIds, ",")),
+		queryIds,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	var products []*entity.Product = make([]*entity.Product, 0)
+	for rows.Next() {
+		var product entity.Product
+		err = rows.Scan(
+			&product.Id,
+			&product.Name,
+			&product.Price,
+			&product.ImageFileName,
+		)
+		if err != nil {
+			return nil, err
+		}
+		products = append(products, &product)
+	}
+
 	return products, nil
 }
