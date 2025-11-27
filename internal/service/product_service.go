@@ -264,12 +264,14 @@ func (ps *productService) DeleteProduct(ctx context.Context, req *product.Delete
 		return nil, err
 	}
 
+	// Don't remove image files from storage, because if a user has already ordered a product, the image files could be lost.
+
 	//remove image file from storage
-	imagePath := filepath.Join("storage", "product", productEntity.ImageFileName)
-	err = os.Remove(imagePath)
-	if err != nil {
-		return nil, err
-	}
+	// imagePath := filepath.Join("storage", "product", productEntity.ImageFileName)
+	// err = os.Remove(imagePath)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	return &product.DeleteProductResponse{
 		Base: utils.SuccessResponse("Delete product successfully"),

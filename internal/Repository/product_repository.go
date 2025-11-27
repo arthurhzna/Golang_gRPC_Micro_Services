@@ -10,9 +10,11 @@ import (
 
 	"github.com/arthurhzna/Golang_gRPC/internal/entity"
 	"github.com/arthurhzna/Golang_gRPC/pb/common"
+	"github.com/arthurhzna/Golang_gRPC/pkg/database"
 )
 
 type IProductRepository interface {
+	WithTransaction(tx *sql.Tx) IProductRepository
 	CreateNewProduct(ctx context.Context, product *entity.Product) error
 	GetProductById(ctx context.Context, id string) (*entity.Product, error)
 	GetProductsByIds(ctx context.Context, ids []string) ([]*entity.Product, error)
@@ -24,13 +26,17 @@ type IProductRepository interface {
 }
 
 type productRepository struct {
-	db *sql.DB
+	db database.DatabaseQuery
 }
 
-func NewProductRepository(db *sql.DB) IProductRepository {
+func NewProductRepository(db database.DatabaseQuery) IProductRepository {
 	return &productRepository{
 		db: db,
 	}
+}
+
+func (pr *productRepository) WithTransaction(tx *sql.Tx) IProductRepository {
+	return &productRepository{db: tx}
 }
 
 func (pr *productRepository) CreateNewProduct(ctx context.Context, product *entity.Product) error {
@@ -358,7 +364,6 @@ func (pr *productRepository) GetProductsByIds(ctx context.Context, ids []string)
 	rows, err := pr.db.QueryContext(
 		ctx,
 		fmt.Sprintf("SELECT id, name, price, image_file_name FROM product WHERE id IN (%s) AND is_deleted = false", strings.Join(queryIds, ",")),
-		queryIds,
 	)
 	if err != nil {
 		return nil, err

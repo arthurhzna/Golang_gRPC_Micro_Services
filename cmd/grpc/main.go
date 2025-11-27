@@ -13,9 +13,11 @@ import (
 	"github.com/arthurhzna/Golang_gRPC/internal/service"
 	"github.com/arthurhzna/Golang_gRPC/pb/auth"
 	"github.com/arthurhzna/Golang_gRPC/pb/cart"
+	"github.com/arthurhzna/Golang_gRPC/pb/order"
 	"github.com/arthurhzna/Golang_gRPC/pb/product"
 	"github.com/arthurhzna/Golang_gRPC/pkg/database"
 	"github.com/joho/godotenv"
+	"github.com/xendit/xendit-go"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
@@ -23,7 +25,9 @@ import (
 )
 
 func main() {
+	ctx := context.Background()
 	err := godotenv.Load()
+	xendit.Opt.SecretKey = os.Getenv("XENDIT_SECRET_KEY")
 	if err != nil {
 		log.Fatalf("Error loading .env file: %v", err)
 	}
@@ -37,7 +41,7 @@ func main() {
 	cacheService := gocache.New(time.Hour*24, time.Hour)
 	authMiddleware := grpcmiddlerware.NewAuthMiddleware(cacheService)
 
-	db := database.ConnectDb(context.Background(), os.Getenv("DB_URL"))
+	db := database.ConnectDb(ctx, os.Getenv("DB_URL"))
 	authRepository := repository.NewAuthRepository(db)
 	authService := service.NewAuthService(authRepository, cacheService)
 	authHandler := handler.NewAuthHandler(authService)
@@ -49,6 +53,10 @@ func main() {
 	cartRepository := repository.NewCartRepository(db)
 	cartService := service.NewCartService(productRepository, cartRepository)
 	cartHandler := handler.NewCartHandler(cartService)
+
+	orderRepository := repository.NewOrderRepository(db)
+	orderService := service.NewOrderService(db, orderRepository, productRepository)
+	orderHandler := handler.NewOrderHandler(orderService)
 
 	grpcServer := grpc.NewServer(grpc.ChainUnaryInterceptor(
 		grpcmiddlerware.ErrorMiddleware,
@@ -62,6 +70,7 @@ func main() {
 	auth.RegisterAuthServiceServer(grpcServer, authHandler)
 	product.RegisterProductServiceServer(grpcServer, productHandler)
 	cart.RegisterCartServiceServer(grpcServer, cartHandler)
+	order.RegisterOrderServiceServer(grpcServer, orderHandler)
 	grpcServer.Serve(lis)
 
 }

@@ -39,8 +39,11 @@ func main() {
 	app := fiber.New()
 	app.Use(cors.New())
 
+	webhookHandler := handler.NewWebhookHandler()
+
 	app.Get("/storage/product/:filename", handleGetFileName)
-	app.Post("/api/v1/products/upload-image", handler.UploadHandler)
+	app.Post("/product/upload", handler.UploadHandler)
+	app.Post("webhook/xendit/invoice", webhookHandler.ReceiveInvoice)
 
 	app.Listen(":3000")
 }

@@ -9,6 +9,8 @@ import (
 )
 
 type orderHandler struct {
+	// NOTE: this should be embedded by value instead of pointer to avoid a nil
+	// pointer dereference when methods are called.
 	order.UnimplementedOrderServiceServer
 
 	orderService service.IOrderService
