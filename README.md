@@ -1,11 +1,21 @@
 # Golang gRPC Microservice
 
-[![Go Version](https://img.shields.io/badge/Go-1.24.2-00ADD8?style=flat&logo=go)](https://golang.org/)
-[![gRPC](https://img.shields.io/badge/gRPC-1.77.0-244c5a?style=flat&logo=grpc)](https://grpc.io/)
-[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat&logo=docker)](https://www.docker.com/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+A Go-based Electronic Commerce microservice showcasing **gRPC implementation** with Clean Architecture. This project emphasizes gRPC best practices, including authentication middleware, Protocol Buffers validation, and efficient inter-service communication patterns.
 
-Electronic Commerce microservice built with Go, gRPC, and REST API. Features include user authentication, product management, shopping cart, order processing with Xendit payment integration, and newsletter subscription.
+## 🎯 What This Project Demonstrates
+
+### Primary Focus: gRPC Implementation
+- ✅ Complete gRPC service implementation with authentication
+- ✅ JWT-based authorization middleware
+- ✅ Protocol Buffers for API contracts
+- ✅ Clean Architecture with repository pattern
+- ✅ In-memory caching for token blacklist
+- ✅ Error handling middleware
+
+### Secondary: REST API
+- 📤 File upload handling (multipart/form-data)
+- 🔔 Webhook receiver for payment gateway
+- 📁 Static file serving
 
 ## ✨ Features
 
