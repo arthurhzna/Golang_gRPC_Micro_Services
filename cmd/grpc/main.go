@@ -13,6 +13,7 @@ import (
 	"github.com/arthurhzna/Golang_gRPC/internal/service"
 	"github.com/arthurhzna/Golang_gRPC/pb/auth"
 	"github.com/arthurhzna/Golang_gRPC/pb/cart"
+	"github.com/arthurhzna/Golang_gRPC/pb/newsletter"
 	"github.com/arthurhzna/Golang_gRPC/pb/order"
 	"github.com/arthurhzna/Golang_gRPC/pb/product"
 	"github.com/arthurhzna/Golang_gRPC/pkg/database"
@@ -58,6 +59,10 @@ func main() {
 	orderService := service.NewOrderService(db, orderRepository, productRepository)
 	orderHandler := handler.NewOrderHandler(orderService)
 
+	newsletterRepository := repository.NewNewsletterRepository(db)
+	newsletterService := service.NewNewsletterService(newsletterRepository)
+	newsletterHandler := handler.NewNewsletterHandler(newsletterService)
+
 	grpcServer := grpc.NewServer(grpc.ChainUnaryInterceptor(
 		grpcmiddlerware.ErrorMiddleware,
 		authMiddleware.Middleware,
@@ -71,6 +76,7 @@ func main() {
 	product.RegisterProductServiceServer(grpcServer, productHandler)
 	cart.RegisterCartServiceServer(grpcServer, cartHandler)
 	order.RegisterOrderServiceServer(grpcServer, orderHandler)
+	newsletter.RegisterNewsletterServiceServer(grpcServer, newsletterHandler)
 	grpcServer.Serve(lis)
 
 }
