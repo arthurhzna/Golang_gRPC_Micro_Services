@@ -16,10 +16,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/xendit/xendit-go"
 	"github.com/xendit/xendit-go/invoice"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type IOrderService interface {
 	CreateOrder(ctx context.Context, req *order.CreateOrderRequest) (*order.CreateOrderResponse, error)
+	ListOrderAdmin(ctx context.Context, req *order.ListOrderAdminRequest) (*order.ListOrderAdminResponse, error)
 }
 
 type orderService struct {
@@ -181,5 +183,54 @@ func (os *orderService) CreateOrder(ctx context.Context, req *order.CreateOrderR
 	return &order.CreateOrderResponse{
 		Base: utils.SuccessResponse("Order created successfully"),
 		Id:   orderEntity.Id,
+	}, nil
+}
+
+func (os *orderService) ListOrderAdmin(ctx context.Context, req *order.ListOrderAdminRequest) (*order.ListOrderAdminResponse, error) {
+	claims, err := jwtentity.GetClaimsFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if claims.Role != entity.UserRoleAdmin {
+		return nil, utils.UnaunthorizedResponse()
+	}
+
+	orders, metadata, err := os.orderRepository.GetListOrderAdminPagination(ctx, req.Pagination)
+	if err != nil {
+		return nil, err
+	}
+
+	items := make([]*order.ListOrderAdminResponseItem, 0)
+	for _, o := range orders {
+
+		products := make([]*order.ListOrderAdminResponseItemProduct, 0)
+
+		for _, orderItem := range o.Items {
+			products = append(products, &order.ListOrderAdminResponseItemProduct{
+				Id:       orderItem.ProductId,
+				Name:     orderItem.ProductName,
+				Price:    orderItem.ProductPrice,
+				Quantity: orderItem.Quantity,
+			})
+		}
+		orderStatusCode := o.OrderStatusCode
+		if o.OrderStatusCode == entity.OrderStatusCodeUnpaid && time.Now().After(*o.ExpiredAt) {
+			orderStatusCode = entity.OrderStatusCodeExpired
+		}
+		items = append(items, &order.ListOrderAdminResponseItem{
+			Id:         o.Id,
+			Number:     o.Number,
+			Customer:   o.UserFullName,
+			StatusCode: orderStatusCode,
+			Total:      o.Total,
+			CreatedAt:  timestamppb.New(o.CreatedAt),
+			Products:   products,
+		})
+	}
+	return &order.ListOrderAdminResponse{
+		Base:       utils.SuccessResponse("Orders fetched successfully"),
+		Pagination: metadata,
+		Data:       items,
 	}, nil
 }

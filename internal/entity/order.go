@@ -33,6 +33,8 @@ type Order struct {
 	XenditPaidAt         *time.Time
 	XenditPaymentMethod  *string
 	XenditPaymentChannel *string
+
+	Items []*OrderItem
 }
 
 type OrderItem struct {
